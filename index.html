@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terço de Santo Expedito</title>
+<style>
+:root{
+  --bg:#fbf7f0;--fg:#3b2f25;--muted:#8a7a68;--accent:#8c5a2b;
+  --bead:#e4d6c3;--bead-done:#b8864b;--bead-cur:#c0392b;--card:#ffffff;--line:#e6dccd;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1d1812;--fg:#f1e7d8;--muted:#a89a86;--accent:#d9a86b;
+    --bead:#3a3129;--bead-done:#c28e52;--bead-cur:#ff6b5b;--card:#27211a;--line:#3a3129;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1d1812;--fg:#f1e7d8;--muted:#a89a86;--accent:#d9a86b;
+  --bead:#3a3129;--bead-done:#c28e52;--bead-cur:#ff6b5b;--card:#27211a;--line:#3a3129;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Georgia,"Times New Roman",serif;min-height:100vh}
+.wrap{max-width:520px;margin:0 auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+h1{font-size:1.25rem;margin:6px 0 0;text-align:center;font-weight:normal;color:var(--accent)}
+#terco{width:min(300px,80vw);height:auto}
+.chain{fill:none;stroke:var(--line);stroke-width:2}
+.bead{fill:var(--bead);transition:fill .4s ease}
+.bead.done{fill:var(--bead-done)}
+.bead.cur{fill:var(--bead-cur);animation:pulse 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.cross{fill:none;stroke:var(--bead);stroke-width:4;stroke-linecap:round;transition:stroke .4s ease}
+.cross.done{stroke:var(--bead-done)}
+.cross.cur{stroke:var(--bead-cur);animation:pulse 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+#ctr{fill:var(--muted);font-size:15px;font-family:Georgia,serif}
+.card{width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px;min-height:230px;display:flex;flex-direction:column}
+.meta{font-size:12px;color:var(--muted);text-align:center;letter-spacing:.05em;text-transform:uppercase}
+.title{font-size:1.1rem;text-align:center;color:var(--accent);margin:8px 0 12px}
+.text{white-space:pre-line;line-height:1.65;font-size:1.02rem;flex:1}
+#pedido-box{margin-top:12px}
+#pedido-box label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+#pedido{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:1rem;background:var(--bg);color:var(--fg)}
+.nav{display:flex;gap:12px;width:100%}
+button{flex:1;padding:14px;border-radius:12px;border:none;font:inherit;font-size:1rem;background:var(--accent);color:#fff;cursor:pointer}
+button.sec{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button:disabled{opacity:.3;cursor:default}
+.progress{font-size:13px;color:var(--muted);text-align:center}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Terço de Santo Expedito</h1>
+
+  <svg id="terco" viewBox="0 0 300 375" aria-label="Progresso do terço"></svg>
+
+  <div class="card">
+    <div class="meta" id="meta"></div>
+    <div class="title" id="title"></div>
+    <div class="text" id="text"></div>
+    <div id="pedido-box" class="hidden">
+      <label for="pedido">Seu pedido (opcional, aparece nas orações que pedem o pedido)</label>
+      <input id="pedido" type="text" maxlength="200" placeholder="Escreva seu pedido aqui" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="progress" id="progress"></div>
+
+  <div class="nav">
+    <button id="prev" class="sec">Voltar</button>
+    <button id="next">Iniciar</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Textos das orações ---------- */
+const SC = "Em nome do Pai, do Filho e do Espírito Santo. Amém.";
+
+const CREDO = "Creio em Deus Pai Todo-Poderoso, Criador do céu e da terra. " +
+"Creio em Jesus Cristo, seu único Filho, nosso Senhor, que foi concebido pelo Espírito Santo, " +
+"nasceu da Virgem Maria, padeceu sob Pôncio Pilatos, foi crucificado, morto e sepultado. " +
+"Desceu à mansão dos mortos, ressuscitou ao terceiro dia, subiu aos céus, está sentado à direita de Deus Pai Todo-Poderoso, " +
+"donde há de vir a julgar os vivos e os mortos. " +
+"Creio no Espírito Santo, na santa Igreja Católica, na comunhão dos santos, na remissão dos pecados, " +
+"na ressurreição da carne e na vida eterna. Amém.";
+
+const PAI = "Pai nosso, que estais no céu, santificado seja o vosso nome; venha a nós o vosso reino; " +
+"seja feita a vossa vontade, assim na terra como no céu. O pão nosso de cada dia nos dai hoje; " +
+"perdoai-nos as nossas ofensas, assim como nós perdoamos a quem nos tem ofendido; " +
+"e não nos deixeis cair em tentação, mas livrai-nos do mal. Amém.";
+
+const AVE = "Ave-Maria, cheia de graça, o Senhor é convosco. " +
+"Bendita sois vós entre as mulheres, e bendito é o fruto do vosso ventre, Jesus. " +
+"Santa Maria, Mãe de Deus, rogai por nós, pecadores, agora e na hora da nossa morte. Amém.";
+
+const GLORIA = "Glória ao Pai, ao Filho e ao Espírito Santo. Como era no princípio, agora e sempre. Amém.";
+
+const SUPLICA = "Santo Expedito, eu confio em vós.";
+
+const ORACAO_GRANDE = (p) =>
+  "Santo Expedito, vós que sois o Santo das Causas Urgentes, protegei-me, ajudai-me, dai-me força, coragem e serenidade.\n\n" +
+  "Atendei ao meu pedido: " + (p || "(faça seu pedido com fé)") + ".";
+
+const FINAL = (p) =>
+  "Meu Santo Expedito das causas justas e urgentes, interceda por mim junto ao Nosso Senhor Jesus Cristo, " +
+  "socorra-me nesta hora de aflição e desespero. Vós que sois um Santo Guerreiro, Vós que sois o Santo dos Aflitos, " +
+  "Vós que sois o Santo dos Desesperados, Vós que sois o Santo das Causas Urgentes, proteja-me, ajuda-me, " +
+  "dai-me força, coragem e serenidade.\n\n" +
+  "Atenda meu pedido: " + (p || "(repita seu pedido)") + ".\n\n" +
+  "Ajuda-me a superar estas horas difíceis, proteja-me de todos que possam me prejudicar, proteja minha família, " +
+  "atenda meu pedido com urgência. Devolva-me a paz e a tranquilidade. Serei grato pelo resto de minha vida " +
+  "e levarei seu nome a todos que têm fé. Amém.";
+
+/* ---------- Nós do terço ----------
+   Ordem: 0 = crucifixo | 1 = Pai-Nosso | 2,3,4 = Ave-Marias | 5 = Glória (conector)
+          6..60 = 5 dezenas de 11 contas (1 grande + 10 pequenas)
+   done = nós já concluídos (ficam preenchidos)
+   cur  = nó atual (pulsa em vermelho), -1 se nenhum */
+const TOTAL_NODES = 61;
+const steps = [];
+const add = (o) => steps.push(o);
+const inicio = "Início do terço";
+
+add({ label: inicio, center: "Início", title: "Sinal da cruz", text: () => SC, done: 0, cur: 0 });
+add({ label: inicio, center: "Início", title: "Credo", text: () => CREDO, done: 0, cur: 0 });
+add({ label: inicio, center: "Início", title: "Pai-Nosso", text: () => PAI, done: 1, cur: 1 });
+["fé", "esperança", "caridade"].forEach((v, i) =>
+  add({ label: inicio, center: "Início", title: "Ave-Maria pela " + v, text: () => AVE, done: 2 + i, cur: 2 + i }));
+add({ label: inicio, center: "Início", title: "Glória ao Pai", text: () => GLORIA, done: 5, cur: 5 });
+
+for (let g = 0; g < 5; g++) {
+  const base = 6 + g * 11;
+  const c = `${g + 1}ª dezena`;
+  add({ label: `Dezena ${g + 1} de 5 · conta grande`, center: c, title: "Pedido da causa",
+        text: ORACAO_GRANDE, input: true, done: base, cur: base });
+  for (let k = 1; k <= 10; k++) {
+    add({ label: `Dezena ${g + 1} de 5 · conta ${k} de 10`, center: c, title: "Súplica",
+          text: () => SUPLICA, done: base + k, cur: base + k });
+  }
+  add({ label: `Dezena ${g + 1} de 5 · fim da dezena`, center: c, title: "Glória ao Pai",
+        text: () => GLORIA, done: base + 11, cur: -1 });
+}
+
+add({ label: "Oração final", center: "Amém", title: "Oração a Santo Expedito",
+      text: FINAL, input: true, done: TOTAL_NODES, cur: -1 });
+
+/* ---------- Desenho do terço em SVG ---------- */
+const svg = document.getElementById("terco");
+const NS = "http://www.w3.org/2000/svg";
+const nodes = [];
+
+function el(tag, attrs, cls) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (cls) e.setAttribute("class", cls);
+  svg.appendChild(e);
+  return e;
+}
+
+// Laço (fio) por trás de tudo: circulo das dezenas e fio do pingente
+const CX = 150, CY = 125, R = 110;
+el("circle", { cx: CX, cy: CY, r: R, class: "chain" });
+el("line", { x1: 150, y1: 235, x2: 150, y2: 335, class: "chain" });
+
+// 0: crucifixo embaixo (sinal da cruz e credo); a cabeça da cruz prende no fio
+nodes.push(el("path", { d: "M150 335 V367 M137 345 H163" }, "cross"));
+
+// 1: Pai-Nosso (conta grande logo acima da cruz)
+nodes.push(el("circle", { cx: 150, cy: 321, r: 9 }, "bead"));
+
+// 2,3,4: Ave-Marias
+[305, 289, 273].forEach(y => nodes.push(el("circle", { cx: 150, cy: y, r: 5 }, "bead")));
+
+// 5: Glória (conector)
+nodes.push(el("circle", { cx: 150, cy: 257, r: 5 }, "bead"));
+
+// 6..60: dezenas, começando embaixo no círculo e subindo
+for (let s = 0; s < 55; s++) {
+  const isLarge = s % 11 === 0;
+  const ang = -Math.PI / 2 + (s * 2 * Math.PI) / 55;
+  nodes.push(el("circle", {
+    cx: (CX + R * Math.cos(ang)).toFixed(2),
+    cy: (CY - R * Math.sin(ang)).toFixed(2),
+    r: isLarge ? 9 : 5
+  }, "bead"));
+}
+
+const ctr = el("text", { id: "ctr", x: CX, y: CY + 5, "text-anchor": "middle" });
+ctr.setAttribute("class", "");
+ctr.id = "ctr";
+
+/* ---------- Estado e renderização ---------- */
+let idx = -1;               // -1 = tela inicial; steps.length = concluído
+let pedido = "";
+
+const ui = {
+  meta: document.getElementById("meta"),
+  title: document.getElementById("title"),
+  text: document.getElementById("text"),
+  pedidoBox: document.getElementById("pedido-box"),
+  pedido: document.getElementById("pedido"),
+  progress: document.getElementById("progress"),
+  prev: document.getElementById("prev"),
+  next: document.getElementById("next"),
+};
+
+function drawNodes(done, cur) {
+  nodes.forEach((n, i) => {
+    const base = n.getAttribute("class").split(" ")[0];
+    let cls = base;
+    if (i < done) cls += " done";
+    else if (i === cur) cls += " cur";
+    n.setAttribute("class", cls);
+  });
+}
+
+function render() {
+  if (idx === -1) {
+    ui.meta.textContent = "Preparação";
+    ui.title.textContent = "Pronto para começar?";
+    ui.text.textContent = "Reze no seu ritmo. Use Próximo para avançar e Voltar caso queira revisar.";
+    ui.pedidoBox.classList.add("hidden");
+    ui.progress.textContent = "";
+    ui.prev.disabled = true;
+    ui.next.textContent = "Iniciar";
+    ctr.textContent = "Início";
+    drawNodes(0, -1);
+    return;
+  }
+
+  if (idx >= steps.length) {
+    ui.meta.textContent = "Terço concluído";
+    ui.title.textContent = "Amém";
+    ui.text.textContent = "Que Santo Expedito interceda por você e por suas causas.";
+    ui.pedidoBox.classList.add("hidden");
+    ui.progress.textContent = "";
+    ui.prev.disabled = false;
+    ui.next.textContent = "Recomeçar";
+    ctr.textContent = "Amém";
+    drawNodes(TOTAL_NODES, -1);
+    return;
+  }
+
+  const s = steps[idx];
+  ui.meta.textContent = s.label;
+  ui.title.textContent = s.title;
+  ui.text.textContent = s.text(pedido);
+  ui.pedidoBox.classList.toggle("hidden", !s.input);
+  ui.progress.textContent = `Passo ${idx + 1} de ${steps.length}`;
+  ui.prev.disabled = idx === 0;
+  ui.next.textContent = idx === steps.length - 1 ? "Concluir" : "Próximo";
+  ctr.textContent = s.center;
+  drawNodes(s.done, s.cur);
+}
+
+function next() {
+  if (idx === -1) idx = 0;
+  else if (idx >= steps.length) idx = -1;
+  else idx = idx + 1;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function prev() {
+  if (idx > 0) {
+    idx = Math.min(idx - 1, steps.length - 1);
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+ui.next.addEventListener("click", next);
+ui.prev.addEventListener("click", prev);
+ui.pedido.addEventListener("input", () => {
+  pedido = ui.pedido.value.trim();
+  render();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target === ui.pedido) return;
+  if (e.key === "ArrowRight") next();
+  if (e.key === "ArrowLeft") prev();
+});
+
+render();
+</script>
+</body>
+</html>
